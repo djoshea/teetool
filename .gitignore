@@ -88,6 +88,9 @@ ENV/
 # Rope project settings
 .ropeproject
 
+# IntelliJ project settings
+.idea/
+
 # linux backup files
 *~
 
