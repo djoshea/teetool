@@ -85,6 +85,7 @@ class Model(object):
         # convert to cells
         # (cc, cA) = self._getGMMCells(mu_y, sig_y, settings["ngaus"])
 
+        self._gp = gp
         ## mean vector [ngaus*ndim x 1]
         self._mu_y = mu_y
         ## covariance matrix [ngaus*ndim x ngaus*ndim]
@@ -156,7 +157,7 @@ class Model(object):
 
         npoints = np.size(mu_y, axis=0) / ndim
 
-        mu_y = np.reshape(mu_y, newshape=(-1,))
+        mu_y = np.asarray(mu_y).reshape(-1)
 
         xp = np.linspace(0, 1, npoints)
 
@@ -173,6 +174,39 @@ class Model(object):
             cluster_data.append((xp, Yp))
 
         return cluster_data
+
+
+    def addObservation(self, observation):
+        ndim = self._ndim
+        nobs = len(observation)
+        ngaus = self._gp._ngaus
+
+        ## mean vector [ngaus*ndim x 1] # gaus is inner index, dim is outer index
+        mu_y = self._mu_y
+        ## covariance matrix [ngaus*ndim x ngaus*ndim] # gaus is inner index, dim is outer index
+        sig_y = self._sig_y
+
+        npoints = np.size(mu_y, axis=0) / ndim
+
+        # ## covariance matrix [nobs*ndim x nobs*ndim]
+        # x_obs = np.zeros((nobs*ndim, nobs*ndim), )
+        # for (x, Y) in observation:
+
+        # x = np.array([0.0, 0.5, 1.0])
+        # y = np.array([[0.1], [0.5], [0.9], [0.9], [0.1], [0.9]])
+        x = np.array([0.5, 0.2])
+        y = np.array([[0.5], [0.2], [0.2], [0.3]])
+        xs = np.linspace(0, 1, ngaus)
+        k_xx = self._gp.kernel(x, x)
+        k_xxs = self._gp.kernel(x, xs)
+        k_xsx = self._gp.kernel(xs, x)
+        k_xsxs = self._gp.kernel(xs, xs)
+
+        m_xs = self._gp.mean(xs)
+        m_x = self._gp.mean(x)
+
+        self._mu_y = m_xs + np.dot(np.dot(k_xsx, np.linalg.inv(k_xx)), (y - m_x))
+        self._sig_y = k_xsxs - np.dot(np.dot(k_xsx, np.linalg.inv(k_xx)), k_xxs)
 
 
     def _clusterdata2points(self, cluster_data):

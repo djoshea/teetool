@@ -317,6 +317,15 @@ class World(object):
             this_cluster["model"] = new_model
             self._clusters[icluster] = this_cluster
 
+    def addObservation(self, icluster, observation):
+        # check validity
+        self._check_icluster(icluster)
+
+        # extract
+        this_cluster = self._clusters[icluster]
+
+        this_cluster["model"].addObservation(observation)
+
     ## returns the mean trajectory [x, y, z] for list_icluster
     # @param self object pointer
     # @param list_icluster specify clusters
