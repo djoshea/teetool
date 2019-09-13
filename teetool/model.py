@@ -194,8 +194,8 @@ class Model(object):
 
         # x = np.array([0.0, 0.5, 1.0])
         # y = np.array([[0.1], [0.5], [0.9], [0.9], [0.1], [0.9]])
-        x = np.array([0.5, 0.2])
-        y = np.array([[0.5], [0.2], [0.2], [0.3]])
+
+        x, y = observation
         xs = np.linspace(0, 1, ngaus)
         k_xx = self._gp.kernel(x, x)
         k_xxs = self._gp.kernel(x, xs)
