@@ -218,7 +218,7 @@ class Visual_2d(object):
                 a_line, = self._ax.plot(Y[:, 0],
                                        Y[:, 1],
                                        color=colours[i],
-                                       linestyle=":",
+                                       # linestyle=":",
                                        **kwargs)
 
         self._labels.append((a_line, "samples"))
