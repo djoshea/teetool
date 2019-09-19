@@ -202,7 +202,7 @@ class Visual_2d(object):
     # @param ntraj number of trajectories
     # @param colour if specified, overwrites distinct colours
     # @param kwargs additional parameters for plotting
-    def plotSamples(self, list_icluster=None, ntraj=50, colour=None, **kwargs):
+    def plotSamples(self, list_icluster=None, ntraj=50, colour=None, idim=None, **kwargs):
 
         # check validity
         list_icluster = self._world._check_list_icluster(list_icluster)
@@ -215,8 +215,15 @@ class Visual_2d(object):
             these_samples = self._world.getSamples(icluster,
                                                    nsamples=ntraj)
             for (x, Y) in these_samples:
-                a_line, = self._ax.plot(Y[:, 0],
-                                       Y[:, 1],
+                if idim is None:
+                    x = Y[:, 0]
+                    y = Y[:, 1]
+                else:
+                    x = (x - x.min()) / (x.max() - x.min())
+                    y = Y[:, idim]
+
+                a_line, = self._ax.plot(x,
+                                       y,
                                        color=colours[i],
                                        # linestyle=":",
                                        **kwargs)
