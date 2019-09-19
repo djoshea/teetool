@@ -323,6 +323,10 @@ class GaussianProcess(object):
 
         (cc, cA) = self._getGMMCells(mu_y, sig_y, self._ngaus)
 
+        self._basis = basis
+        self._mu_w = mu_w
+        self._sig_w = sig_w
+
         return (mu_y, sig_y, cc, cA)
 
     def _from_clusterdata2cells(self, cluster_data, basis):
