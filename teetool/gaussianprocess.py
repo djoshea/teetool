@@ -59,24 +59,21 @@ class GaussianProcess(object):
     #  @param mu_y   mean vector [ngaus*ndim x 1]
     #  @param sig_y  covariance matrix [ngaus*ndim x ngaus*ndim]
     def _norm2real(self, mu_y, sig_y):
-        return mu_y, sig_y
         (M, D) = self._outline2vectors()
 
         D_diag = np.diagflat(D ** 2)
 
-        mu_y_real = np.multiply(mu_y, D)  + M
+        mu_y_real = np.multiply(mu_y, D) + M
         sig_y_real = sig_y * D_diag
 
         return mu_y_real, sig_y_real
 
     def _norm2real_mu(self, mu_y):
-        return mu_y
         (M, D) = self._outline2vectors()
-        mu_y_real = np.multiply(mu_y, D)  + M
+        mu_y_real = np.multiply(mu_y, D) + M
         return mu_y_real
 
     def _norm2real_sig(self, sig_y):
-        return sig_y
         (M, D) = self._outline2vectors()
         D_diag = np.diagflat(D ** 2)
         sig_y_real = sig_y * D_diag
@@ -132,7 +129,7 @@ class GaussianProcess(object):
         sig_y = np.mat(sig_y_sum / ntraj)
 
         # convert to original values
-        mu_y, sig_y = self._norm2real(mu_y, sig_y)
+        # mu_y, sig_y = self._norm2real(mu_y, sig_y)
 
         # convert to cells
         (cc, cA) = self._getGMMCells(mu_y, sig_y, self._ngaus)
@@ -201,15 +198,18 @@ class GaussianProcess(object):
 
         return (mu_y, sig_y, cc, cA)
 
-    ## @param x in [0;1]
     def mean(self, x):
         Hp = self._basis.get(x)
-        return self._norm2real_mu(Hp * self._mu_w)
+        mu = Hp * self._mu_w
+        return self._norm2real_mu(mu)
+        #return mu
 
     def kernel(self, x1, x2):
         Hp1 = self._basis.get(x1)
         Hp2 = self._basis.get(x2)
-        return self._norm2real_sig(Hp1 * self._sig_w * Hp2.transpose())
+        sig = Hp1 * self._sig_w * Hp2.transpose()
+        return self._norm2real_sig(sig)
+        #return sig
 
     ## models the trajectory data via expectation maximization. It uses the basis function as specified to handle missing data, and, when noisy data is detected within a trajectory, the global trend, as learned, takes over. A suitable method in the presence of noise or an unknown shape of trajectories -- the latter as different models can be compared via likelihood
     #  @param self  The object pointer.
