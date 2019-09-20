@@ -258,9 +258,6 @@ class World(object):
             # all
             list_icluster = range(len(self._clusters))
 
-        if type(list_icluster) is not list:
-            raise TypeError("expected list, not {0}".format(type(list_icluster)))
-
         for icluster in list_icluster:
             # check validity
             self._check_icluster(icluster)
