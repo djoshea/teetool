@@ -7,9 +7,7 @@ from __future__ import print_function
 import numpy as np
 
 from numpy.linalg import svd
-from scipy.interpolate import griddata
 
-import time, sys
 import teetool as tt
 
 import multiprocessing as mp
@@ -175,25 +173,8 @@ class Model(object):
 
         return cluster_data
 
-
     def addObservation(self, observation):
-        ndim = self._ndim
-        nobs = len(observation)
         ngaus = self._gp._ngaus
-
-        ## mean vector [ngaus*ndim x 1] # gaus is inner index, dim is outer index
-        mu_y = self._mu_y
-        ## covariance matrix [ngaus*ndim x ngaus*ndim] # gaus is inner index, dim is outer index
-        sig_y = self._sig_y
-
-        npoints = np.size(mu_y, axis=0) / ndim
-
-        # ## covariance matrix [nobs*ndim x nobs*ndim]
-        # x_obs = np.zeros((nobs*ndim, nobs*ndim), )
-        # for (x, Y) in observation:
-
-        # x = np.array([0.0, 0.5, 1.0])
-        # y = np.array([[0.1], [0.5], [0.9], [0.9], [0.1], [0.9]])
 
         x, y = observation
         xs = np.linspace(0, 1, ngaus)
@@ -208,6 +189,16 @@ class Model(object):
         self._mu_y = m_xs + np.dot(np.dot(k_xsx, np.linalg.inv(k_xx)), (y - m_x))
         self._sig_y = k_xsxs - np.dot(np.dot(k_xsx, np.linalg.inv(k_xx)), k_xxs)
 
+    def getMarginalDistribution(self, x):
+        ndim = self._ndim
+        ngaus = self._gp._ngaus
+        x = int(x*ngaus)
+        if x == ngaus:
+            x = ngaus - 1
+
+        mu = self._mu_y[x::ngaus]
+        sig = np.diag(self._sig_y)[x::ngaus]
+        return (mu, sig)
 
     def _clusterdata2points(self, cluster_data):
         """returns the points Y [npoints x ndim]

@@ -548,6 +548,19 @@ class World(object):
 
         return (ss, xx, yy, zz)
 
+    def getMarginalDistribution(self, x, list_icluster=None):
+        # check validity
+        list_icluster = self._check_list_icluster(list_icluster)
+
+        md_list = []
+        for icluster in list_icluster:
+            this_cluster = self._clusters[icluster]
+
+            # obtain marginal distribution
+            md = this_cluster["model"].getMarginalDistribution(x)
+            md_list.append(md)
+
+        return md_list
 
 
     ## returns a grid based on outline and resolution
