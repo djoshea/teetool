@@ -201,15 +201,15 @@ class GaussianProcess(object):
     def mean(self, x):
         Hp = self._basis.get(x)
         mu = Hp * self._mu_w
-        return self._norm2real_mu(mu)
-        #return mu
+        #return self._norm2real_mu(mu)
+        return mu
 
     def kernel(self, x1, x2):
         Hp1 = self._basis.get(x1)
         Hp2 = self._basis.get(x2)
         sig = Hp1 * self._sig_w * Hp2.transpose()
-        return self._norm2real_sig(sig)
-        #return sig
+        #return self._norm2real_sig(sig)
+        return sig
 
     ## models the trajectory data via expectation maximization. It uses the basis function as specified to handle missing data, and, when noisy data is detected within a trajectory, the global trend, as learned, takes over. A suitable method in the presence of noise or an unknown shape of trajectories -- the latter as different models can be compared via likelihood
     #  @param self  The object pointer.
