@@ -36,17 +36,20 @@ class GaussianProcess(object):
     #  @param self  The object pointer.
     #  @return      M, vector with minimum values [ngaus*ndim x 1]
     #  @return      D, vector with difference values [ngaus*ndim x 1]
-    def _outline2vectors(self):
+    def _outline2vectors(self, size=None):
+        if size is None:
+            size = self._ngaus
+
         M_list = [] # list with minimum values [M]
         D_list = [] # list with difference [D]
         for d in range(self._ndim):
             xmin = self._outline[d*2+0]
             xmax = self._outline[d*2+1]
 
-            m1 = np.ones(shape=(self._ngaus, 1)) * (xmin)
+            m1 = np.ones(shape=(size, 1)) * (xmin)
             M_list.append(m1)
 
-            d1 = np.ones(shape=(self._ngaus, 1)) * (xmax - xmin)
+            d1 = np.ones(shape=(size, 1)) * (xmax - xmin)
             D_list.append(d1)
 
         M = np.concatenate(M_list, axis=0) # vector
@@ -69,12 +72,12 @@ class GaussianProcess(object):
         return mu_y_real, sig_y_real
 
     def _norm2real_mu(self, mu_y):
-        (M, D) = self._outline2vectors()
+        (M, D) = self._outline2vectors(size=int(mu_y.shape[0] / self._ndim))
         mu_y_real = np.multiply(mu_y, D) + M
         return mu_y_real
 
     def _norm2real_sig(self, sig_y):
-        (M, D) = self._outline2vectors()
+        (M, D) = self._outline2vectors(size=int(sig_y.shape[1] / self._ndim))
         D_diag = np.diagflat(D ** 2)
         sig_y_real = sig_y * D_diag
         return sig_y_real
@@ -129,7 +132,7 @@ class GaussianProcess(object):
         sig_y = np.mat(sig_y_sum / ntraj)
 
         # convert to original values
-        # mu_y, sig_y = self._norm2real(mu_y, sig_y)
+        mu_y, sig_y = self._norm2real(mu_y, sig_y)
 
         # convert to cells
         (cc, cA) = self._getGMMCells(mu_y, sig_y, self._ngaus)
@@ -201,15 +204,13 @@ class GaussianProcess(object):
     def mean(self, x):
         Hp = self._basis.get(x)
         mu = Hp * self._mu_w
-        #return self._norm2real_mu(mu)
-        return mu
+        return self._norm2real_mu(mu)
 
     def kernel(self, x1, x2):
         Hp1 = self._basis.get(x1)
         Hp2 = self._basis.get(x2)
         sig = Hp1 * self._sig_w * Hp2.transpose()
-        #return self._norm2real_sig(sig)
-        return sig
+        return self._norm2real_sig(sig)
 
     ## models the trajectory data via expectation maximization. It uses the basis function as specified to handle missing data, and, when noisy data is detected within a trajectory, the global trend, as learned, takes over. A suitable method in the presence of noise or an unknown shape of trajectories -- the latter as different models can be compared via likelihood
     #  @param self  The object pointer.
