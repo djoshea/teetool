@@ -240,7 +240,6 @@ class Model(object):
         ndim = self._ndim
 
         c = np.array(c)
-        A = np.mat(A)
 
         # find the rotation matrix and radii of the axes
         [_, s, rotation] = svd(A)
@@ -256,11 +255,8 @@ class Model(object):
             ellipse = np.empty(shape=(nellipse, ndim))
             ellipse[:,0] = x
             ellipse[:,1] = y
-            ellipse = np.mat(ellipse)
 
-            ap = ellipse * rotation.transpose() + c.transpose()
-
-            # return np.mat(ellipse)
+            ap = ellipse @ rotation.T + c.T
 
         if ndim == 3:
             # 3d
@@ -280,22 +276,16 @@ class Model(object):
 
             ap = np.zeros(shape=(nrows, ndim))
 
-            ap[:, 0] = x.transpose()
-            ap[:, 1] = y.transpose()
-            ap[:, 2] = z.transpose()
+            ap[:, 0] = x.T
+            ap[:, 1] = y.T
+            ap[:, 2] = z.T
 
-            ap = tt.helpers.unique_rows(ap) # np.mat(ap).unique_rows()
+            ap = tt.helpers.unique_rows(ap)
 
-            ap = ap * rotation.transpose() + c.transpose()
-
-            # ap = np.concatenate([x, y, z], axis=1)
-
-            # return np.mat(ap)
+            ap = ap @ rotation.T + c.T
 
         ap = tt.helpers.unique_rows(ap)
-
-        return np.mat(ap)
-
+        return ap
 
     def _getSample(self, c, A, nsamples=1, std=1):
         """
@@ -306,7 +296,7 @@ class Model(object):
 
         S = np.diag(S_diag)
 
-        var_y = np.mat(np.real(U*np.sqrt(S)))
+        var_y = np.real(U @ np.sqrt(S))
 
         ndim = self._ndim
 
@@ -315,11 +305,11 @@ class Model(object):
         for i in range(nsamples):
             # obtain sample
             vecRandom = np.random.normal(size=(c.shape))
-            Yi = c + var_y * (std * vecRandom)
+            Yi = c + var_y @ (std * vecRandom)
 
-            Y[i,:] = Yi.transpose()
+            Y[i,:] = Yi.T
 
-        return np.mat(Y)
+        return Y
 
     def _getCoordsEllipse(self, nellipse=20, sdwidth=5):
         """
@@ -344,7 +334,7 @@ class Model(object):
 
         Y = np.concatenate(Y_list, axis=0)
 
-        return np.mat(Y)
+        return Y
 
     def _eval_logp(self, Y_pos):
         """
@@ -421,8 +411,7 @@ class Model(object):
                 for iy in range(ny):
                     x1 = xx[ix, 0]
                     y1 = yy[0, iy]
-                    pos = np.mat([x1, y1])
-                    Y_pos.append(pos)
+                    Y_pos.append([x1, y1])
                     Y_idx.append([ix, iy])
         elif (self._ndim == 3):
             # 3d
@@ -432,16 +421,12 @@ class Model(object):
                         x1 = xx[ix, 0, 0]
                         y1 = yy[0, iy, 0]
                         z1 = zz[0, 0, iz]
-                        pos = np.mat([x1, y1, z1])
-                        Y_pos.append(pos)
+                        Y_pos.append([x1, y1, z1])
                         Y_idx.append([ix, iy, iz])
         else:
             raise NotImplementedError()
 
-        Y_pos = np.concatenate(Y_pos, axis=0)
         Y_pos = np.array(Y_pos)
-
-        #Y_idx = np.concatenate(Y_idx, axis=0)
         Y_idx = np.array(Y_idx)
 
         return (Y_pos, Y_idx)
@@ -552,7 +537,7 @@ class Model(object):
         p.join()
 
         # convert to array
-        arr_these_inside = np.array(list_these_inside).squeeze().transpose()
+        arr_these_inside = np.array(list_these_inside).squeeze().T
 
         # an array of bools (all FALSE, thus zeros)
         # FALSE = not inside
