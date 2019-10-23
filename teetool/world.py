@@ -346,6 +346,23 @@ class World(object):
 
         return Y_list
 
+
+    def getOutline(self, list_icluster=None):
+        # check validity
+        list_icluster = self._check_list_icluster(list_icluster)
+
+        Y_list = []
+
+        for icluster in list_icluster:
+            # extract
+            this_cluster = self._clusters[icluster]
+            # obtain outline
+            Y = this_cluster["outl"]
+            # append to list
+            Y_list.append(Y)
+
+        return Y_list
+
     ## returns a grid with bools to specify whether a point falls within the confidence region or not
     # @param self object pointer
     # @param list_icluster which clusters to return
