@@ -79,7 +79,7 @@ class GaussianProcess(object):
     def _norm2real_sig(self, sig_y):
         (M, D) = self._outline2vectors(size=int(sig_y.shape[1] / self._ndim))
         D_diag = np.diagflat(D ** 2)
-        sig_y_real = sig_y * D_diag
+        sig_y_real = sig_y @ D_diag
         return sig_y_real
 
     ## models the trajectory data via re-sampling, ignoring noise, missing data, trends, etc. Quick method only suitable for high-quality data
