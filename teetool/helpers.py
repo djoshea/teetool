@@ -77,23 +77,23 @@ def find_nearest(original_values, target_values):
 # RE-CODED FROM MATLAB nearestSPD
 # http://uk.mathworks.com/matlabcentral/fileexchange/42885-nearestspd
 def nearest_spd(A):
-    A = np.mat(A)
+    A = np.array(A)
 
     # symmetrize A into B
-    B = (A + A.transpose()) / 2.
+    B = (A + A.T) / 2.
 
     # Compute the symmetric polar factor of B. Call it H.
     # Clearly H is itself SPD.
     [_, S_diag, V] = svd(B)
     S = np.diag(S_diag)
 
-    H = V*S*V.transpose()
+    H = V @ S @ V.T
 
     # get Ahat in the above formula
     Ahat = (B+H) / 2.
 
     # ensure symmetry
-    Ahat = (Ahat + Ahat.transpose()) / 2.
+    Ahat = (Ahat + Ahat.T) / 2.
 
     # test that Ahat is in fact PD. if it is not so, then tweak it just a bit.
     p = 1
@@ -152,10 +152,10 @@ def get_trajectories(ntype=0, ndim=3, ntraj=50, npoints=100, noise_std=.5):
 
         # 2d / 3d
         if (ndim == 2):
-            Y = np.array([y1, y2]).transpose()
+            Y = np.array([y1, y2]).T
 
         if (ndim == 3):
-            Y = np.array([y1, y2, y3]).transpose()
+            Y = np.array([y1, y2, y3]).T
 
         # add noise
         (nrows, ncols) = Y.shape
@@ -201,13 +201,9 @@ def unique_rows(a):
 # @param A convariance matrix
 # @returns loglikelihood log likelihood of Gaussian
 def gauss_logp(y, ndim, c, A):
-    y = np.mat(y)
-    c = np.mat(c)
-    A = np.mat(A)
-
     pL1 = 1. * ndim * np.log(2.*np.pi)
     pL2 = 1. * np.log( det(A) )
-    pL3 = 1. * (y-c).transpose()*inv(A)*(y-c)
+    pL3 = 1. * (y-c).T @ inv(A) @ (y-c)
 
     pL = - 1. / 2. * ( pL1 + pL2 + pL3 )
 
@@ -220,12 +216,8 @@ def gauss_logp(y, ndim, c, A):
 # @param A convariance matrix
 # @returns value value of Gaussian at point y
 def gauss(y, ndim, c, A):
-    y = np.mat(y)
-    c = np.mat(c)
-    A = np.mat(A)
-
     p1 = 1 / np.sqrt(((2*np.pi)**ndim)*det(A))
-    p2 = np.exp(-1/2*(y-c).transpose()*inv(A)*(y-c))
+    p2 = np.exp(-1/2 * (y-c).T @ inv(A) @ (y-c))
 
     return (p1*p2)
 

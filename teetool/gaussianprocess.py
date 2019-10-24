@@ -66,8 +66,8 @@ class GaussianProcess(object):
 
         D_diag = np.diagflat(D ** 2)
 
-        mu_y_real = np.multiply(mu_y, D) + M
-        sig_y_real = sig_y * D_diag
+        mu_y_real = mu_y * D + M
+        sig_y_real = sig_y @ D_diag
 
         return mu_y_real, sig_y_real
 
@@ -127,9 +127,9 @@ class GaussianProcess(object):
         sig_y_sum = np.zeros(shape=(mdim*ngaus, mdim*ngaus))
 
         for yn in yc:
-            sig_y_sum += (yn - mu_y) * (yn - mu_y).transpose()
+            sig_y_sum += (yn - mu_y) @ (yn - mu_y).T
 
-        sig_y = np.mat(sig_y_sum / ntraj)
+        sig_y = sig_y_sum / ntraj
 
         # convert to original values
         mu_y, sig_y = self._norm2real(mu_y, sig_y)
@@ -163,8 +163,8 @@ class GaussianProcess(object):
         for i, (xn, Y) in enumerate(cluster_data):
             yn = np.reshape(Y, newshape=(-1,1), order='F')
             Hn = basis.get(xn)
-            wn = pinv(Hn) * yn
-            wn = np.mat(wn)
+            wn = pinv(Hn) @ yn
+            wn = wn
             wc.append(wn)
 
         # obtain average [mu]
@@ -173,22 +173,22 @@ class GaussianProcess(object):
         for wn in wc:
             mu_w += wn
 
-        mu_w = np.mat(mu_w / ntraj)
+        mu_w = mu_w / ntraj
 
         # obtain standard deviation [sig]
         sig_w_sum = np.zeros(shape=(ndim*nbasis, ndim*nbasis))
 
         for wn in wc:
-            sig_w_sum += (wn - mu_w)*(wn - mu_w).transpose()
+            sig_w_sum += (wn - mu_w) @ (wn - mu_w).T
 
-        sig_w = np.mat(sig_w_sum / ntraj)
+        sig_w = sig_w_sum / ntraj
 
         # predict these values
         xp = np.linspace(0, 1, ngaus)
         Hp = basis.get(xp)
 
-        mu_y = Hp * mu_w
-        sig_y = Hp * sig_w * Hp.transpose()
+        mu_y = Hp @ mu_w
+        sig_y = Hp @ sig_w @ Hp.T
 
         # convert to original values
         mu_y, sig_y = self._norm2real(mu_y, sig_y)
@@ -203,13 +203,13 @@ class GaussianProcess(object):
 
     def mean(self, x):
         Hp = self._basis.get(x)
-        mu = Hp * self._mu_w
+        mu = Hp @ self._mu_w
         return self._norm2real_mu(mu)
 
     def kernel(self, x1, x2):
         Hp1 = self._basis.get(x1)
         Hp2 = self._basis.get(x2)
-        sig = Hp1 * self._sig_w * Hp2.transpose()
+        sig = Hp1 @ self._sig_w @ Hp2.T
         return self._norm2real_sig(sig)
 
     ## models the trajectory data via expectation maximization. It uses the basis function as specified to handle missing data, and, when noisy data is detected within a trajectory, the global trend, as learned, takes over. A suitable method in the presence of noise or an unknown shape of trajectories -- the latter as different models can be compared via likelihood
@@ -247,7 +247,7 @@ class GaussianProcess(object):
         # initial variables
         BETA_EM = 1000.
         mu_w = np.zeros(shape=(nbasis*ndim, 1))
-        sig_w = np.mat(np.eye(nbasis*ndim))
+        sig_w = np.eye(nbasis*ndim)
         sig_w_inv = inv(sig_w)
 
         loglikelihood_previous = np.inf
@@ -316,8 +316,8 @@ class GaussianProcess(object):
         xp = np.linspace(0, 1, ngaus)
         Hp = basis.get(xp)
 
-        mu_y = Hp * mu_w
-        sig_y = Hp * sig_w * Hp.transpose()
+        mu_y = Hp @ mu_w
+        sig_y = Hp @ sig_w @ Hp.T
 
         # convert to original values
         mu_y, sig_y = self._norm2real(mu_y, sig_y)
@@ -412,19 +412,13 @@ class GaussianProcess(object):
         """
 
         # calculate S :: (50)
-        Sn_inv = sig_w_inv + np.multiply(BETA_EM,(Hn.transpose()*Hn))
-        Sn = np.mat(inv(Sn_inv))
+        Sn_inv = sig_w_inv + BETA_EM * (Hn.T @ Hn)
+        Sn = inv(Sn_inv)
 
-        Ewn = (Sn *((np.multiply(BETA_EM,(Hn.transpose()*yn))) + ((sig_w_inv*mu_w))))
-
-        # assure matrix
-        Ewn = np.mat(Ewn)
+        Ewn = (Sn @ ( (BETA_EM * (Hn.T @ yn)) + (sig_w_inv @ mu_w) ) )
 
         # BISHOP (2.62)
-        Ewnwn = Sn + Ewn*Ewn.transpose()
-
-        # assure matrix
-        Ewnwn = np.mat(Ewnwn)
+        Ewnwn = Sn + Ewn @ Ewn.T
 
         return (Ewn, Ewnwn)
 
@@ -447,7 +441,7 @@ class GaussianProcess(object):
             # sum
             mu_w_sum += Ewn
 
-        mu_w = np.mat(mu_w_sum / ntraj)
+        mu_w = mu_w_sum / ntraj
 
         return mu_w
 
@@ -483,10 +477,10 @@ class GaussianProcess(object):
             Ewnwn = Ewwc[n]
 
             # sum
-            SIGMA_n = Ewnwn - 2.*(mu_w*Ewn.transpose()) + mu_w*mu_w.transpose()
+            SIGMA_n = Ewnwn - 2.*(mu_w @ Ewn.T) + mu_w @ mu_w.T
             sig_w_sum += SIGMA_n
 
-        sig_w = np.mat(sig_w_sum / ntraj)
+        sig_w = sig_w_sum / ntraj
 
         return sig_w
 
@@ -505,9 +499,9 @@ class GaussianProcess(object):
             Ewn = Ewc[n]
             Ewnwn = Ewwc[n]
 
-            BETA_sum_inv += np.dot(yn.transpose(),yn) - 2.*(np.dot(yn.transpose(),(Hn*Ewn))) + np.trace((Hn.transpose()*Hn)*Ewnwn)
+            BETA_sum_inv += yn.T @ yn - 2.*(yn.T @ (Hn @ Ewn)) + np.trace((Hn.T @ Hn) @ Ewnwn)
 
-        BETA_EM = np.mat( (ndim*Mstar) / BETA_sum_inv )
+        BETA_EM = (ndim*Mstar) / BETA_sum_inv
 
         return BETA_EM
 
@@ -527,7 +521,7 @@ class GaussianProcess(object):
             Ewnwn = Ewwc[n]
 
             # loglikelihood_pYw_sum = loglikelihood_pYw_sum + ((yn.')*yn - 2*(yn.')*(Hn*Ewn) + trace(((Hn.')*Hn)*Ewnwn));
-            loglikelihood_pYw_sum += np.dot(yn.transpose(),yn) - 2.*(np.dot(yn.transpose(),(Hn*Ewn))) + np.trace((Hn.transpose()*Hn)*Ewnwn)
+            loglikelihood_pYw_sum += yn.T @ yn - 2.*(yn.T @ (Hn @ Ewn)) + np.trace((Hn.T @ Hn) @ Ewnwn)
 
         #  loglikelihood_pYw =  + ((Mstar*D) / 2) * log(2*pi) - ((Mstar*D) / 2) * log( BETA_EM ) + (BETA_EM/2) * loglikelihood_pYw_sum;
         loglikelihood_pYw = (Mstar*ndim / 2.) * np.log(2.*np.pi) - (Mstar*ndim / 2.) * np.log(BETA_EM) + (BETA_EM / 2.) * loglikelihood_pYw_sum
@@ -552,7 +546,7 @@ class GaussianProcess(object):
             Ewnwn = Ewwc[n]
 
             # loglikelihood_pw_sum = loglikelihood_pw_sum + trace( (LAMBDA_EM)*( Ewnwn - 2*MU_EM*(Ewn.') + (MU_EM*(MU_EM.')) ) );
-            loglikelihood_pw_sum += np.trace(sig_w_inv*(Ewnwn - 2.*mu_w*Ewn.transpose() + mu_w*mu_w.transpose()))
+            loglikelihood_pw_sum += np.trace(sig_w_inv*(Ewnwn - 2.*mu_w @ Ewn.T + mu_w @ mu_w.T))
 
         # loglikelihood_pw = + ((N*J*D) / 2) * log(2*pi) + (N/2) * ln_det_Sigma + (1/2) * loglikelihood_pw_sum;
         loglikelihood_pw = (ntraj*nbasis*ndim/2.)*np.log(2*np.pi) + (ntraj/2.)*np.log(det(sig_w)) + (1./2.)*loglikelihood_pw_sum
