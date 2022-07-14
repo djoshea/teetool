@@ -93,3 +93,7 @@ ENV/
 
 # osx
 .DS_Store
+
+# matlab files
+*.mat
+
