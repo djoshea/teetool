@@ -6,11 +6,11 @@ classdef Teetool < handle
     
     methods(Static)
         function world = build_world(timeCell, dataCell, args)
-            % dataCell is nConditions { nTrials x d } where d is 2 or 3
+            % dataCell is nConditions { nTrials x time x d } where d is 2 or 3
             arguments
                 timeCell
                 dataCell cell
-                args.resolution (1, 2) = [100 100];
+                args.resolution (1, :) = [100 100];
                 args.model_type (1, 1) string = "resampling";
                 args.ngaus (1, 1) = 100;
             end
@@ -18,7 +18,7 @@ classdef Teetool < handle
             nC = numel(dataCell);
             D = size(dataCell{1}, 3);
 
-            assert(D == 2 || D == 3);
+            assert(D == 2 || D == 3, "D==%d is not valid", D);
             world = py.teetool.World(name="world", ndim=int32(D), resolution=py.list(uint32(args.resolution)));
 
             prog = ProgressBar(nC, "Adding conditions to teetool.World");
@@ -109,6 +109,7 @@ classdef Teetool < handle
                     inside = logical(tube{1}{1})';
                     xx = double(tube{2}{1})';
                     yy = double(tube{2}{2})';
+                    
                     [cv, h] = contour(xx, yy, inside, [1 1], Parent=axh);
                     delete(h);
                     
@@ -156,6 +157,9 @@ classdef Teetool < handle
                 xyz = single(m{1});
                 out(iC).xvec = xyz(:, 1);
                 out(iC).yvec = xyz(:, 2);
+                if size(xyz, 2) > 2
+                    out(iC).zvec = xyz(:, 3);
+                end
                 prog.increment();
             end
             prog.finish();
