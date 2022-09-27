@@ -111,9 +111,12 @@ classdef Teetool < handle
                     yy = double(tube{2}{2})';
                     [cv, h] = contour(xx, yy, inside, [1 1], Parent=axh);
                     delete(h);
-                    npts = cv(2, 1); % this will only extract the first major contour region
-                    out(iC, iS).xvec = cv(1, 2:npts+1);
-                    out(iC, iS).yvec = cv(2, 2:npts+1);
+                    
+                    out(iC, iS).inside = sparse(inside);
+                    [out(iC, iS).xvecs, out(iC, iS).yvecs] = parse_countours(cv);
+                    if numel(out(iC, iS).xvecs) > 1
+                        a = 1;
+                    end
                     out(iC, iS).sd_width = sd_widths(iS);
                     prog.increment();
                 end
@@ -121,6 +124,22 @@ classdef Teetool < handle
 
             close(figh);
             prog.finish();
+
+            function [xc, yc] = parse_countours(cv)
+                % parse successive contours
+                cstart = 1;
+                ctotal = size(cv, 2);
+                piece_idx = 1;
+                xc = {};
+                yc = {};
+                while cstart <= ctotal
+                    npts = cv(2, cstart);
+                    xc{piece_idx} = cv(1, cstart + (1:npts)); %#ok<AGROW> 
+                    yc{piece_idx} = cv(2, cstart + (1:npts)); %#ok<AGROW> 
+                    cstart = cstart + npts + 1;
+                    piece_idx = piece_idx + 1;
+                end
+            end
         end
 
         function out = get_means(world)
